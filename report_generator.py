@@ -1,0 +1,71 @@
+#Proyecto de scanner de puertos usando Python
+
+#Rafael Rodriguez Botello Fierro
+
+#Importmaos librerias nmap y NVD
+import nvdlib
+import nmap
+
+#Creamos funcion nm para escanear puertos
+nm = nmap.PortScanner()
+
+#Pedimos IP y los puertos que se desean escanear
+IP = input("Ingrese la IP que desee escanear ")
+Ports = input("Ingrese los puertos que desee escanear ")
+
+#Usamos la fucnion scan para poder hacer el escaneo con los argumentos(IP, rango de puertos, sV que hace un escaneo completo)
+nm.scan(IP,Ports, "-sV")
+print(nm[IP].all_protocols())
+
+#Creamos una lista vacia para agregar todos los hosts para el HTML
+hosts = []
+
+#Creamos un for loop para cada host que si respondio al IP
+for host in nm.all_hosts():
+	print("Host", nm[IP].hostname())
+	print("Estado", nm[IP].state())
+	Ports_list = []
+	hosts_d = dict(ip = host, ports = Ports_list)
+	hosts.append(hosts_d)
+#Anidamos otro for loop para conocer el protocolo por el cual se conectaron TCP o UDP
+	for protocolo in nm[host].all_protocols():
+		print("Protocolo", protocolo)
+		ports = nm[host][protocolo].keys()
+#Anidamos otro for loop para analizar todos los puertos observando su estado, nombre y la version, al igual se usa la funcion search, para buscar su CVE
+		for port in sorted(ports):
+			state = nm[host][protocolo][port]["state"]
+			name = nm[host][protocolo][port]["name"]
+			version = nm[host][protocolo][port]["version"] 
+			keyword = name + " " + version
+			search = nvdlib.searchCVE(keywordSearch = keyword)
+			print("Puerto", port )
+			print("Estado", state )
+			print("Nombre", name )
+			print("Version", version)
+			cves_lista = []
+			port_d = dict(port = port, state = state, name = name, version = version, cves = cves_lista)
+			Ports_list.append(port_d)
+
+
+#Se crea un if para sortear si existen CVEs conocidos para cada puerto
+			if len(search) == 0:
+				print("No hay CVEs conocidos")
+			else:
+				for eachCVE in search:
+					print(eachCVE.v31severity, "-", str(eachCVE.v31score))
+					print(eachCVE.descriptions[0].value)
+					cve_d = dict(severidad = eachCVE.v31severity, score = eachCVE.v31score, description= eachCVE.descriptions[0].value)
+					cves_lista.append(cve_d)
+
+print(hosts)
+
+from jinja2 import Environment, FileSystemLoader
+env = Environment(loader=FileSystemLoader('templates'))
+template = env.get_template('report.html')
+
+output = template.render(hosts=hosts)
+
+with open('reports/report.html', 'w') as f:
+    f.write(output)
+
+print("Reporte generado en reports/report.html")

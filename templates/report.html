@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>NetWarden Report</title>
+<style>
+    body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    background: #0d1117;
+    color: #c9d1d9;
+    padding: 2rem;
+    margin: 0;
+  }
+  
+  header h1{
+    font-size: 22px;
+    font-weight: 500;
+    color: #e6edf3;
+    margin: 0 0 1.5rem;
+    border-bottom: 0.5px solid #30363d;
+  }
+
+
+  summary {
+    cursor: pointer;
+    padding: 0.55rem 0.85rem;
+    font-weight: 500;
+    font-size: 13px;
+    background: #161b22;
+    color: #c9d1d9;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    user-select: none;
+  }
+
+  summary::before {
+    content: '▶';
+    font-size: 9px;
+    color: #6e7681;
+    transition: transform 0.15s;
+    flex-shrink: 0;
+  }
+
+  details[open] > summary::before {
+    transform: rotate(90deg);
+  }
+
+  summary:hover {
+    background: #1c2128;
+    color: #e6edf3;
+  }
+
+  /* Niveles anidados */
+  details details {
+    margin: 0.4rem 0.7rem;
+    border-color: #21262d;
+  }
+
+  details details summary {
+    font-size: 12px;
+    background: #0d1117;
+  }
+
+  details details details {
+    margin: 0.3rem 0.6rem;
+  }
+
+  p {
+    margin: 0.3rem 0.85rem;
+    padding: 0.25rem 0;
+    font-size: 12.5px;
+    color: #8b949e;
+  }
+
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+    vertical-align: middle;
+  }
+
+  .high {
+    background: #3d1a1a;
+    color: #ff7b72;
+    border: 0.5px solid #ff7b7244;
+  }
+
+  .medium {
+    background: #2d2008;
+    color: #e3b341;
+    border: 0.5px solid #e3b34144;
+  }
+
+  .low {
+    background: #112218;
+    color: #3fb950;
+    border: 0.5px solid #3fb95044;
+  }
+
+</style>
+</head>
+<body>
+    <header>
+        <h1>NetWarden Report</h1>
+    </header>
+    {% for host in hosts %}
+    <details>
+        <summary>{{ host.ip }}</summary>
+        {% for port in host.ports %}
+        <details>
+        <summary>{{ port.Port }} </summary>
+        <p>Name: {{ port.Name }}</p>
+        <p>State: {{ port.State }}</p>
+        <p>Version: {{ port.Version }}</p>
+        {% for cve in port.CVEs %}
+        <details>
+            <summary>
+                <span class="badge {{ cve.Severity | lower }}">{{ cve.Severity }}</span>
+                &nbsp;{{ cve.Score }} 
+            </summary>
+            <p>Severidad: <span class="badge {{ cve.Severity | lower }}">{{ cve.Severity }}</span></p>
+            <p>Score: {{ cve.Score }}</p>
+            <p>{{ cve.Description }}</p>
+        </details>
+        {% else %}
+            <p>No known CVEs found for this service and version.</p>
+            {% endfor %}
+        </details>
+        {% endfor %}
+    </details>
+    {% endfor %}
+</body>
+</html>
+
